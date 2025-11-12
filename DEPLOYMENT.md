@@ -203,9 +203,9 @@ The repository includes these deployment files:
 
 2. **runtime.txt**
    ```
-   php-8.2
+   php-8.3
    ```
-   - Specifies PHP version
+   - Specifies PHP 8.3 (latest supported version)
 
 3. **composer.json**
    - Defines PHP dependencies
