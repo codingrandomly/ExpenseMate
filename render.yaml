@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: expensemate
-    runtime: php
-    buildCommand: "composer install --prefer-dist --no-dev || true"
-    startCommand: "php -S 0.0.0.0:$PORT"
-    envVars:
-      - key: PORT
-        value: 8000
