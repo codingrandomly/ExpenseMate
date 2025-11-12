@@ -1,0 +1,22 @@
+# Expenses data (auto-generated)
+expenses.csv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# PHP
+*.php~
+*.phtml
+.php_cs.cache
+
+# Session files
+sessions/
+
+# Temporary files
+*.tmp
+*.log
