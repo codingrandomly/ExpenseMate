@@ -20,3 +20,11 @@ sessions/
 # Temporary files
 *.tmp
 *.log
+
+# Composer
+vendor/
+composer.lock
+
+# Environment
+.env
+.env.local

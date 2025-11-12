@@ -1,0 +1,14 @@
+{
+  "name": "expensemate/expensemate",
+  "description": "Professional multi-page PHP expense tracker",
+  "version": "1.0.0",
+  "require": {
+    "php": "^8.0"
+  },
+  "require-dev": {},
+  "autoload": {
+    "psr-4": {
+      "ExpenseMate\\": "includes/"
+    }
+  }
+}
