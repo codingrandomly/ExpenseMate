@@ -1,107 +1,128 @@
 <?php
-session_start();
-require_once "../src/config/db.php";
+/**
+ * Dashboard Page - UNIT-I: Variables, Arrays, Loops, Control Statements
+ */
+$pageTitle = "Dashboard";
+include '../includes/config.php';
+include '../includes/header.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: ../auth/login.php");
-    exit();
+// UNIT-I: Calculate totals using foreach and control statements
+$totalExpense = 0;
+$expenses = $tracker->getExpenses();
+$today = date('Y-m-d');
+$thisMonth = date('Y-m');
+$monthTotal = 0;
+$todayTotal = 0;
+
+// UNIT-I: foreach loop
+foreach ($expenses as $expense) {
+    $totalExpense += $expense->getAmount();
+    if (strpos($expense->getDate(), $thisMonth) === 0) {
+        $monthTotal += $expense->getAmount();
+    }
+    if ($expense->getDate() === $today) {
+        $todayTotal += $expense->getAmount();
+    }
 }
-
-$user_id = $_SESSION['user_id'];
-
-$today_sql = "SELECT SUM(amount) AS total FROM expenses WHERE user_id = ? AND DATE(expense_date) = CURDATE()";
-$stmt = $conn->prepare($today_sql);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$today_total = $stmt->get_result()->fetch_assoc()['total'] ?? 0;
-
-
-$yesterday_sql = "SELECT SUM(amount) AS total FROM expenses WHERE user_id = ? AND DATE(expense_date) = CURDATE() - INTERVAL 1 DAY";
-$stmt = $conn->prepare($yesterday_sql);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$yesterday_total = $stmt->get_result()->fetch_assoc()['total'] ?? 0;
-
-
-$week_sql = "SELECT SUM(amount) AS total FROM expenses WHERE user_id = ? AND YEARWEEK(expense_date, 1) = YEARWEEK(CURDATE(), 1)";
-$stmt = $conn->prepare($week_sql);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$week_total = $stmt->get_result()->fetch_assoc()['total'] ?? 0;
-
-
-$month_sql = "SELECT SUM(amount) AS total FROM expenses WHERE user_id = ? AND MONTH(expense_date) = MONTH(CURDATE()) AND YEAR(expense_date) = YEAR(CURDATE())";
-$stmt = $conn->prepare($month_sql);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$month_total = $stmt->get_result()->fetch_assoc()['total'] ?? 0;
-
-
-$year_sql = "SELECT SUM(amount) AS total FROM expenses WHERE user_id = ? AND YEAR(expense_date) = YEAR(CURDATE())";
-$stmt = $conn->prepare($year_sql);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$year_total = $stmt->get_result()->fetch_assoc()['total'] ?? 0;
-
-
-$total_sql = "SELECT SUM(amount) AS total FROM expenses WHERE user_id = ?";
-$stmt = $conn->prepare($total_sql);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$total_expense = $stmt->get_result()->fetch_assoc()['total'] ?? 0;
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - ExpenseMate</title>
-    <link rel="stylesheet" href="../assets/css/main.css">
-    <link rel="stylesheet" href="../assets/css/dashboard.css">
-</head>
-<body>
+<h2 class="text-white mb-4"><i class="fas fa-chart-pie"></i> Dashboard</h2>
 
-    <?php include "../includes/navbar.php"; ?>
+<!-- Statistics Row -->
+<div class="row">
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-box">
+            <h6>Today's Expenses</h6>
+            <h3>₹<?php echo number_format($todayTotal, 2); ?></h3>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-box">
+            <h6>This Month</h6>
+            <h3>₹<?php echo number_format($monthTotal, 2); ?></h3>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-box">
+            <h6>Total Expenses</h6>
+            <h3>₹<?php echo number_format($totalExpense, 2); ?></h3>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-box">
+            <h6>Total Entries</h6>
+            <h3><?php echo count($expenses); ?></h3>
+        </div>
+    </div>
+</div>
 
-    <div class="dashboard-container">
-        <h1>Welcome to ExpenseMate, <?php echo htmlspecialchars($_SESSION['full_name']); ?> &#128075; </h1>
-        <p class="subtitle">Here’s a quick summary of your expenses.</p>
-
-        <div class="stats-grid">
-            <div class="card">
-                <h3>Today's Expense</h3>
-                <p>₹<?php echo number_format($today_total, 2); ?></p>
-            </div>
-
-            <div class="card">
-                <h3>Yesterday's Expense</h3>
-                <p>₹<?php echo number_format($yesterday_total, 2); ?></p>
-            </div>
-
-            <div class="card">
-                <h3>This Week</h3>
-                <p>₹<?php echo number_format($week_total, 2); ?></p>
-            </div>
-
-            <div class="card">
-                <h3>This Month</h3>
-                <p>₹<?php echo number_format($month_total, 2); ?></p>
-            </div>
-
-            <div class="card">
-                <h3>This Year</h3>
-                <p>₹<?php echo number_format($year_total, 2); ?></p>
-            </div>
-
-            <div class="card total">
-                <h3>Total Expense</h3>
-                <p>₹<?php echo number_format($total_expense, 2); ?></p>
+<!-- Charts Row -->
+<div class="row mt-5">
+    <div class="col-md-6">
+        <div class="card-custom">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-4"><i class="fas fa-doughnut"></i> Spending by Category</h5>
+                <canvas id="categoryChart"></canvas>
             </div>
         </div>
     </div>
+    
+    <div class="col-md-6">
+        <div class="card-custom">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-4"><i class="fas fa-list"></i> Recent Expenses</h5>
+                <div class="recent-expenses">
+                    <?php
+                    $recentExpenses = array_slice($expenses, -5);
+                    if (empty($recentExpenses)) {
+                        echo '<p class="text-muted">No expenses yet. <a href="add_expense.php">Add one now!</a></p>';
+                    } else {
+                        foreach (array_reverse($recentExpenses) as $expense) {
+                            $catData = $categories[$expense->getCategory()];
+                            echo '<div style="border-left: 4px solid ' . htmlspecialchars($catData['color']) . '; padding: 10px; margin-bottom: 10px;">';
+                            echo '<strong>' . htmlspecialchars($expense->getDescription()) . '</strong><br>';
+                            echo '<small class="text-muted">' . htmlspecialchars($expense->getDate()) . ' · ' . htmlspecialchars($catData['name']) . '</small><br>';
+                            echo '<strong style="color: ' . htmlspecialchars($catData['color']) . ';">₹' . number_format($expense->getAmount(), 2) . '</strong>';
+                            echo '</div>';
+                        }
+                    }
+                    ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <?php include "../includes/footer.php"; ?>
+<script>
+    window.addEventListener('load', function() {
+        const categoryData = <?php echo json_encode($tracker->getTotalByCategory()); ?>;
+        const categories = <?php echo json_encode($categories); ?>;
+        
+        const labels = Object.keys(categoryData).map(cat => categories[cat].name);
+        const colors = Object.keys(categoryData).map(cat => categories[cat].color);
+        const data = Object.values(categoryData);
+        
+        if (data.length > 0) {
+            const ctx = document.getElementById('categoryChart');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+            }
+        }
+    });
+</script>
 
-</body>
-</html>
+<?php include '../includes/footer.php'; ?>

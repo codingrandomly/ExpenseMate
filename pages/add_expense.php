@@ -1,219 +1,122 @@
 <?php
-
-session_start();
-require_once __DIR__ . '/../src/config/db.php';
-require_once __DIR__ . '/../src/helpers/sanitize.php';
-
-if (!isset($_SESSION['user_id'])) {
-    header("Location: ../auth/login.php");
-    exit;
-}
+/**
+ * Add Expense Page - UNIT-II: Forms, GET/POST Methods, Form Validation
+ */
+$pageTitle = "Add Expense";
+include '../includes/config.php';
 
 $message = "";
-$showBudgetAlert = false; 
+$errorMessage = "";
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $category = sanitize_input($_POST["category"]);
-    $item = sanitize_input($_POST["item"]);
-    $price = floatval($_POST["price"]);
-    $details = sanitize_input($_POST["details"]);
-    $expense_date = sanitize_input($_POST["expense_date"]);
-    $user_id = $_SESSION["user_id"];
+// UNIT-II: POST Method for form submission
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_POST['add_expense'])) {
+        try {
+            $date = trim($_POST['date']) ?: date('Y-m-d');
+            $category = trim($_POST['category']);
+            $description = trim($_POST['description']);
+            $amount = trim($_POST['amount']);
+            $notes = trim($_POST['notes'] ?? '');
 
-    if (!empty($category) && !empty($item) && !empty($price) && !empty($expense_date)) {
-   
-        $stmt = $conn->prepare("INSERT INTO expenses (user_id, category, item, amount, details, expense_date) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("issdss", $user_id, $category, $item, $price, $details, $expense_date);
-
-        if ($stmt->execute()) {
-        
-            $current_year = date("Y");
-            $current_month = date("n");
-
-            $stmt_budget = $conn->prepare("SELECT limit_amount FROM budgets WHERE user_id = ? AND year = ? AND month = ?");
-            $stmt_budget->bind_param("iii", $user_id, $current_year, $current_month);
-            $stmt_budget->execute();
-            $result_budget = $stmt_budget->get_result();
-            $budget = ($result_budget->num_rows > 0) ? $result_budget->fetch_assoc()['limit_amount'] : 0;
-            $stmt_budget->close();
-
-            $stmt_exp = $conn->prepare("SELECT SUM(amount) AS total FROM expenses WHERE user_id = ? AND YEAR(expense_date) = ? AND MONTH(expense_date) = ?");
-            $stmt_exp->bind_param("iii", $user_id, $current_year, $current_month);
-            $stmt_exp->execute();
-            $result_exp = $stmt_exp->get_result();
-            $total_expense = $result_exp->fetch_assoc()['total'] ?? 0;
-            $stmt_exp->close();
-
-            if ($budget > 0 && $total_expense > $budget) {
-                $showBudgetAlert = true;
-                $exceeded = $total_expense - $budget;
-                $message = "<div class='alert error'>&#9888; Budget Exceeded! You’ve spent ₹" . number_format($exceeded, 2) . " over your ₹" . number_format($budget, 2) . " limit.</div>";
-            } else {
-                $message = "<div class='alert success'> Expense added successfully!</div>";
+            // UNIT-I: Regular expression validation
+            if (!preg_match('/^[a-zA-Z0-9\s\-,\.]+$/', $description)) {
+                throw new Exception("Invalid characters in description");
             }
-        } else {
-            $message = "<div class='alert error'> Error: Could not add expense. Please try again.</div>";
-        }
 
-        $stmt->close();
-    } else {
-        $message = "<div class='alert error'>&#9888; Please fill all required fields.</div>";
+            $tracker->addExpense($date, $category, $description, $amount, $notes);
+            $message = "✓ Expense added successfully!";
+        } catch (Exception $e) {
+            $errorMessage = "✗ Error: " . htmlspecialchars($e->getMessage());
+        }
     }
 }
+
+include '../includes/header.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Expense | ExpenseMate</title>
-    <link rel="stylesheet" href="../assets/css/main.css">
-    <style>
-        
+<h2 class="text-white mb-4"><i class="fas fa-plus-circle"></i> Add New Expense</h2>
 
-        .container {
-            width: 100%;
-            max-width: 600px;
-            background: #1a1a1a;
-            padding: 35px 30px;
-            border-radius: 16px;
-            box-shadow: 0 0 25px rgba(255, 255, 255, 0.08);
-            text-align: left;
-        }
+<?php if ($message): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?php echo htmlspecialchars($message); ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
 
-        h2 {
-            text-align: center;
-            color: #fff;
-            margin-bottom: 25px;
-            font-size: 1.8em;
-        }
+<?php if ($errorMessage): ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <?php echo htmlspecialchars($errorMessage); ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
 
-        form.form-card {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
+<div class="card-custom">
+    <div class="card-body p-5">
+        <!-- UNIT-II: HTML Form with POST method -->
+        <form method="POST" action="add_expense.php" id="expenseForm">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="date" class="form-label fw-600">Date</label>
+                    <input type="date" class="form-control form-control-custom" id="date" name="date" value="<?php echo date('Y-m-d'); ?>" required>
+                </div>
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: #ccc;
-        }
-
-        input, select, textarea {
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            background: #262626;
-            color: #fff;
-            font-size: 15px;
-            outline: none;
-            transition: all 0.2s ease;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            border-color: #888;
-            background: #2e2e2e;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .btn {
-            background: linear-gradient(90deg, #00bcd4, #4caf50);
-            color: #fff;
-            font-weight: 600;
-            border: none;
-            padding: 12px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 188, 212, 0.4);
-        }
-
-        .alert {
-            text-align: center;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .alert.success { background-color: #2e7d32; color: #fff; }
-        .alert.error { background-color: #c62828; color: #fff; }
-
-        @media (max-width: 768px) {
-            .container {
-                margin: 20px;
-                padding: 25px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <?php include "../includes/navbar.php"; ?>
-
-    <div class="container">
-        <h2>Add New Expense</h2>
-        <?= $message; ?>
-        <form method="POST" class="form-card">
-            <div class="form-group">
-                <label for="category">Category *</label>
-                <select id="category" name="category" required>
-                    <option value="">Select Category</option>
-                    <option value="Food">Food</option>
-                    <option value="Transport">Transport</option>
-                    <option value="Shopping">Shopping</option>
-                    <option value="Bills">Bills</option>
-                    <option value="Entertainment">Entertainment</option>
-                    <option value="Healthcare">Healthcare</option>
-                    <option value="Other">Other</option>
-                </select>
+                <div class="col-md-6 mb-3">
+                    <label for="category" class="form-label fw-600">Category</label>
+                    <!-- UNIT-I: Associated Arrays in HTML select -->
+                    <select class="form-control form-control-custom" id="category" name="category" required>
+                        <option value="">Select a category</option>
+                        <?php foreach ($categories as $key => $cat): ?>
+                            <option value="<?php echo htmlspecialchars($key); ?>">
+                                <?php echo htmlspecialchars($cat['icon']) . ' ' . htmlspecialchars($cat['name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="item">Item *</label>
-                <input type="text" id="item" name="item" placeholder="e.g., Coffee, Bus Ticket" required>
+            <div class="mb-3">
+                <label for="description" class="form-label fw-600">Description</label>
+                <input type="text" class="form-control form-control-custom" id="description" name="description" placeholder="What did you spend on?" maxlength="100" required>
+                <small class="text-muted">Max 100 characters</small>
             </div>
 
-            <div class="form-group">
-                <label for="price">Amount (₹)*</label>
-                <input type="number" id="price" name="price" step="0.01" min="0" placeholder="Enter amount" required>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="amount" class="form-label fw-600">Amount (₹)</label>
+                    <input type="number" class="form-control form-control-custom" id="amount" name="amount" placeholder="0.00" step="0.01" required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="notes" class="form-label fw-600">Notes (Optional)</label>
+                    <input type="text" class="form-control form-control-custom" id="notes" name="notes" placeholder="Additional details...">
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="details">Details</label>
-                <textarea id="details" name="details" placeholder="Optional details..."></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="expense_date">Expense Date *</label>
-                <input type="date" id="expense_date" name="expense_date" required>
-            </div>
-
-            <button type="submit" class="btn">+ Add Expense</button>
+            <button type="submit" name="add_expense" class="btn btn-custom btn-primary w-100 mt-3">
+                <i class="fas fa-check"></i> Add Expense
+            </button>
         </form>
     </div>
+</div>
 
-    <?php include "../includes/footer.php"; ?>
+<script>
+    // UNIT-I: Form validation with JavaScript
+    document.getElementById('expenseForm').addEventListener('submit', function(e) {
+        const description = document.getElementById('description').value.trim();
+        const amount = parseFloat(document.getElementById('amount').value);
+        
+        if (!description || description.length > 100) {
+            alert('Description must be 1-100 characters');
+            e.preventDefault();
+            return false;
+        }
+        
+        if (isNaN(amount) || amount <= 0) {
+            alert('Amount must be a positive number');
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
 
-    <?php if ($showBudgetAlert): ?>
-    <script>
-        alert(`\u26A0\uFE0F Warning: You have exceeded your monthly budget limit!`);
-    </script>
-    <?php endif; ?>
-</body>
-</html>
+<?php include '../includes/footer.php'; ?>
