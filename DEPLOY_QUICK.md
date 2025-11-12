@@ -1,11 +1,11 @@
 # ⚡ Quick Deployment Guide
 
-## Railway (Recommended - 1 Click Deploy!)
+## Render.com (Recommended - 1 Click Deploy!)
 
 ### Option 1: Direct Deploy Link (Fastest!)
 ✅ Click this button or link:
 ```
-https://railway.app/new?repo=https://github.com/codingrandomly/ExpenseMate
+https://render.com/deploy?repo=https://github.com/codingrandomly/ExpenseMate
 ```
 
 This will:
@@ -13,29 +13,33 @@ This will:
 2. Clone the repository
 3. Auto-detect PHP configuration
 4. Deploy your app
-5. Give you a live URL in ~2-3 minutes
+5. Give you a live URL in ~3-5 minutes
 
-### Option 2: Manual Deploy on Railway
-1. Go to https://railway.app
+### Option 2: Manual Deploy on Render
+1. Go to https://render.com
 2. Sign up/Login with GitHub
-3. Click "Create New Project"
-4. Select "Deploy from GitHub"
-5. Find "codingrandomly/ExpenseMate"
-6. Click "Deploy"
-7. Wait for completion
-8. Get your live URL from the dashboard
+3. Click "New +" → "Web Service"
+4. Connect "codingrandomly/ExpenseMate"
+5. Configure:
+   - **Name**: expensemate
+   - **Runtime**: Docker (or PHP if available)
+   - **Build Command**: Leave empty
+   - **Start Command**: `php -S 0.0.0.0:8000`
+6. Click "Create Web Service"
+7. Wait for deployment
+8. Get your live URL
 
 ---
 
-## Why Railway?
+## Why Render?
 
-✅ **Zero configuration** - Auto-detects PHP  
-✅ **Free tier available** - $5/month credit  
+✅ **Easy setup** - Minimal configuration  
+✅ **Free tier available** - Great for learning  
 ✅ **Automatic HTTPS** - Secure by default  
-✅ **Data persists** - CSV files don't get deleted  
-✅ **Easy rollback** - If something breaks  
+✅ **Data persists** - CSV files stay between restarts  
+✅ **Better PHP support** - No version conflicts  
 ✅ **Real-time logs** - Debug easily  
-✅ **One-click deploys** - Direct GitHub integration  
+✅ **GitHub integration** - Auto-deploy on push  
 
 ---
 
@@ -44,8 +48,8 @@ This will:
 Once your app is live:
 
 1. **Get Your URL**
-   - Check Railway dashboard
-   - Format: `https://expensemate-xxxxx.railway.app`
+   - Check Render dashboard
+   - Format: `https://expensemate-xxxxx.onrender.com`
 
 2. **Start Using**
    - Add expenses
@@ -61,32 +65,34 @@ Once your app is live:
 
 ## Troubleshooting
 
-### Issue: "No repositories found"
-**Solution**: Use the direct link above instead of searching
-
-### Issue: Deploy fails
+### Issue: Deploy takes too long
 **Solution**: 
-- Check GitHub repo is public
-- Verify credentials in Railway
-- Check build logs for errors
+- Render free tier has cold starts (first request slower)
+- Subsequent requests are faster
+- Wait 5-10 minutes for first deployment
+
+### Issue: "No version available for php"
+**Solution**:
+- Render handles this automatically
+- render.yaml file handles configuration
+- Just deploy without runtime.txt
 
 ### Issue: Data not persisting
 **Solution**:
-- Railway keeps files by default
+- Render keeps files by default
 - CSV data should persist automatically
-- Check if you're using persistent storage
+- Check render.yaml is in repo
 
 ---
 
 ## Alternative Platforms
 
-If Railway doesn't work:
+If Render doesn't work:
 
-### Render.com
-1. Visit https://render.com
-2. Click "New +" → "Web Service"
-3. Connect GitHub repository
-4. Deploy
+### Railway.app
+1. Visit https://railway.app/new?repo=https://github.com/codingrandomly/ExpenseMate
+2. Click deploy
+3. Wait 2-3 minutes
 
 ### Heroku
 1. Install Heroku CLI
@@ -94,6 +100,13 @@ If Railway doesn't work:
 3. `heroku create expensemate`
 4. `git push heroku main`
 5. `heroku open`
+
+### Traditional Web Hosting
+1. SSH to server
+2. Clone repo
+3. Configure web server (Apache/Nginx)
+4. Set file permissions
+5. Access via domain
 
 ---
 
@@ -105,14 +118,14 @@ https://github.com/codingrandomly/ExpenseMate
 ```
 
 All deployment files included:
-- `Procfile` - Process definition
-- `runtime.txt` - PHP version
+- `Procfile` - Process definition for Railway
+- `render.yaml` - Render configuration
 - `composer.json` - Dependencies
 - `DEPLOYMENT.md` - Full guide
 
 ---
 
-## Live Demo
+## Live Demo Features
 
 Once deployed, you can:
 - ✅ Add expenses (Dashboard)
